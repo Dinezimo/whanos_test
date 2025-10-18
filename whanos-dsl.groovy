@@ -1,67 +1,40 @@
-def createWhanosJob(String repoName, String gitUrl, String language) {
-    job("Projects/project-${repoName}") {
-        description("Auto-generated Whanos job for ${repoName} - Language: ${language}")
-        
-        // Surveiller Git toutes les minutes
-        triggers {
-            scm('* * * * *')
-        }
-        
-        // Configuration Git
-        scm {
-            git {
-                remote {
-                    url(gitUrl)
-                }
-                branches('main')
-                extensions {
-                    cloneOptions {
-                        shallow(true)
-                        timeout(10)
-                    }
-                }
-            }
-        }
-        
-        // Steps de build
-        steps {
-            shell("""#!/bin/bash
-echo "🔨 Whanos Auto-Build: ${repoName}"
+echo "🔗 Linking project from $GIT_URL"
 
-# Détection du langage (redondant mais sécurisé)
-if [ -f "pom.xml" ]; then
-    echo "☕ Java project detected"
-    LANGUAGE="java"
-elif [ -f "package.json" ]; then
-    echo "📦 JavaScript project detected"  
+REPO_NAME=$(basename -s .git $GIT_URL)
+
+# Clone le repo UTILISATEUR seulement
+[ -d "$REPO_NAME" ] && rm -rf "$REPO_NAME"
+git clone $GIT_URL
+
+# Détection langage
+if [ -f "$REPO_NAME/package.json" ]; then
     LANGUAGE="javascript"
+elif [ -f "$REPO_NAME/pom.xml" ]; then
+    LANGUAGE="java"
 else
-    echo "❌ Unsupported project type"
+    echo "❌ Language not supported"
     exit 1
 fi
 
-# Construction de l'image
-echo "🐳 Building Docker image..."
-docker build \\
-    -t ${repoName}:latest \\
-    -f "/var/jenkins_home/workspace/Whanos-Framework/images/\\$LANGUAGE/Dockerfile.standalone" .
+echo "🧠 Detected language: $LANGUAGE"
 
-echo "✅ Build successful!"
+# ✅ BUILD MANUEL dans link-project
+docker build \
+  -t ${REPO_NAME}:latest \
+  -f "images/${LANGUAGE}/Dockerfile.standalone" \
+  "$WORKSPACE/$REPO_NAME"
 
-# Vérifier la présence de whanos.yml pour le déploiement
-if [ -f "whanos.yml" ]; then
-    echo "🚀 whanos.yml found - ready for Kubernetes deployment"
-    # Logique Kubernetes à ajouter ici
-fi
-""")
-        }
-        
-        // Publishers (optionnel - pour les notifications)
-        publishers {
-            mailer('dev@whanos.com', false, true)
-        }
-    }
-}
+echo "✅ Manual build completed"
 
-// Appel de la fonction avec les paramètres
-createWhanosJob("${REPO_NAME}", "${GIT_URL}", "${LANGUAGE}")
+# ✅ CRÉATION DU JOB AUTO-GÉNÉRÉ avec le DSL
+echo "🛠️ Creating automated job with Job DSL..."
+
+# Préparer les paramètres pour le DSL
+export REPO_NAME="$REPO_NAME"
+export GIT_URL="$GIT_URL"
+
+# Exécuter le Job DSL
+echo "📝 Generating job..."
+java -jar /var/jenkins_home/war/WEB-INF/jenkins-cli.jar -s http://localhost:8080 groovy = < "whanos-dsl.groovy"
+
+echo "🎉 Automated job 'project-${REPO_NAME}' created in Projects folder!"

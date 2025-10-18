@@ -1,40 +1,41 @@
-echo "🔗 Linking project from $GIT_URL"
+// whanos-dsl.groovy - VERSION ALTERNATIVE
+def createWhanosJob(String repoName, String gitUrl) {
+    job("Projects/project-${repoName}") {
+        description("Auto-generated Whanos job for ${repoName}")
+        
+        triggers { scm('* * * * *') }
+        
+        scm {
+            git {
+                remote { url(gitUrl) }
+                branch('main')
+            }
+        }
+        
+        steps {
+            shell("""#!/bin/bash
+echo "🔄 Whanos Auto-Build: ${repoName}"
 
-REPO_NAME=$(basename -s .git $GIT_URL)
-
-# Clone le repo UTILISATEUR seulement
-[ -d "$REPO_NAME" ] && rm -rf "$REPO_NAME"
-git clone $GIT_URL
-
-# Détection langage
-if [ -f "$REPO_NAME/package.json" ]; then
-    LANGUAGE="javascript"
-elif [ -f "$REPO_NAME/pom.xml" ]; then
+# Détection du langage
+if [ -f "pom.xml" ]; then
     LANGUAGE="java"
+elif [ -f "package.json" ]; then
+    LANGUAGE="javascript"
 else
-    echo "❌ Language not supported"
+    echo "❌ Unsupported project type"
     exit 1
 fi
 
-echo "🧠 Detected language: $LANGUAGE"
+# ✅ CHEMIN ABSOLU vers les Dockerfiles de link-project
+WHANOS_PATH="/var/jenkins_home/workspace/link-project"
+docker build \\
+    -t ${repoName}:latest \\
+    -f "\\$WHANOS_PATH/images/\\$LANGUAGE/Dockerfile.standalone" .
 
-# ✅ BUILD MANUEL dans link-project
-docker build \
-  -t ${REPO_NAME}:latest \
-  -f "images/${LANGUAGE}/Dockerfile.standalone" \
-  "$WORKSPACE/$REPO_NAME"
+echo "✅ Build successful!"
+""")
+        }
+    }
+}
 
-echo "✅ Manual build completed"
-
-# ✅ CRÉATION DU JOB AUTO-GÉNÉRÉ avec le DSL
-echo "🛠️ Creating automated job with Job DSL..."
-
-# Préparer les paramètres pour le DSL
-export REPO_NAME="$REPO_NAME"
-export GIT_URL="$GIT_URL"
-
-# Exécuter le Job DSL
-echo "📝 Generating job..."
-java -jar /var/jenkins_home/war/WEB-INF/jenkins-cli.jar -s http://localhost:8080 groovy = < "whanos-dsl.groovy"
-
-echo "🎉 Automated job 'project-${REPO_NAME}' created in Projects folder!"
+createWhanosJob("${REPO_NAME}", "${GIT_URL}")

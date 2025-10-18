@@ -1,0 +1,5 @@
+FROM whanos-java:base
+WORKDIR /app
+COPY . /app
+RUN mvn package
+CMD ["java", "-jar", "target/app.jar"]

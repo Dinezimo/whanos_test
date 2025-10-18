@@ -1,6 +1,0 @@
-FROM jenkins/jenkins:lts-jdk17
-
-USER root
-RUN apt-get update && apt-get install -y docker.io && apt-get clean
-RUN usermod -aG root jenkins
-USER jenkins

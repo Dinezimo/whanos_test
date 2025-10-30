@@ -1,4 +1,27 @@
-FROM openjdk:21-jdk-slim
+FROM maven:3.9-eclipse-temurin-21
 WORKDIR /app
-RUN apt-get update && apt-get install -y maven && apt-get clean
-CMD ["bash"]
+
+# Copy dependency file first (better layer caching)
+COPY app/pom.xml .
+
+# Install dependencies (this layer can be cached)
+RUN mvn dependency:go-offline
+
+# Copy source code
+COPY app/src ./src
+
+# Compile the application
+RUN mvn clean package -DskipTests
+
+# Remove unnecessary files to minimize image size
+RUN rm -rf ./src && \
+    rm -f pom.xml
+
+# Switch to a smaller runtime image (optional but recommended)
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+# Copy only the built jar from the previous stage
+COPY --from=0 /app/target/app.jar .
+
+CMD ["java", "-jar", "app.jar"]

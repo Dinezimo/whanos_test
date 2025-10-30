@@ -1,0 +1,4 @@
+FROM gcc:13.2
+SHELL ["/bin/bash", "-c"]
+WORKDIR /app
+CMD ["./compiled-app"]

@@ -1,4 +1,3 @@
-FROM node:22
+FROM node:20.9-alpine
 WORKDIR /app
-RUN npm install -g npm@latest || true
-CMD ["bash"]
+COPY /app .

@@ -1,5 +1,13 @@
-FROM whanos-javascript:base
+FROM node:20.9-alpine
 WORKDIR /app
-COPY . .
+
+# 1. Copy package.json first
+COPY app/package.json .
+
+# 2. Install dependencies (cached if package.json doesn't change)
 RUN npm install
-CMD ["npm", "start"]
+
+# 3. Copy application code (changes frequently)
+COPY app/ .
+
+CMD ["node", "."]

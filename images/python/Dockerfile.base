@@ -1,0 +1,4 @@
+FROM python:3.12-slim
+SHELL ["/bin/bash", "-c"]
+WORKDIR /app
+CMD ["python", "-m", "app"]

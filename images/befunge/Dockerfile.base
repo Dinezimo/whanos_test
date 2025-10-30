@@ -1,0 +1,27 @@
+# images/befunge/Dockerfile.base
+# Image de base pour exécuter du Befunge via Python
+
+FROM python:3.12-slim
+
+# Utiliser bash pour toutes les instructions
+SHELL ["/bin/bash", "-lc"]
+
+# Travailler dans /app
+WORKDIR /app
+
+# Installer bash et nettoyer
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends bash \
+ && rm -rf /var/lib/apt/lists/*
+
+# Copier l'interpréteur Befunge dans l'image
+COPY images/befunge/befunge.py /usr/local/bin/befunge.py
+
+# S'assurer qu'il est exécutable
+RUN chmod +x /usr/local/bin/befunge.py
+
+# Définir le point d’entrée : exécution d’un fichier .bf avec python
+ENTRYPOINT ["python3", "/usr/local/bin/befunge.py"]
+
+# Commande par défaut (sera remplacée par le standalone)
+CMD ["main.bf"]

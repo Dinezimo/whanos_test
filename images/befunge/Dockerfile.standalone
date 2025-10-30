@@ -1,0 +1,21 @@
+# images/befunge/Dockerfile.standalone
+FROM python:3.12-slim
+
+SHELL ["/bin/bash", "-lc"]
+WORKDIR /app
+
+# Copier le code utilisateur
+COPY app/ /app/
+
+# Copier ton interpréteur Befunge dans l’image
+COPY images/befunge/befunge.py /usr/local/bin/befunge.py
+RUN chmod +x /usr/local/bin/befunge.py
+
+# Vérifier que le fichier main.bf existe
+RUN if [ ! -f /app/main.bf ]; then \
+      echo "Error: /app/main.bf not found" >&2; exit 1; \
+    fi
+
+# Lancer main.bf via l'interpréteur Python
+ENTRYPOINT ["python3", "/usr/local/bin/befunge.py"]
+CMD ["main.bf"]

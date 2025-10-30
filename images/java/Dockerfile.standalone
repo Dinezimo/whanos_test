@@ -1,5 +1,24 @@
-FROM whanos-java:base
+FROM maven:3.9-eclipse-temurin-21
 WORKDIR /app
-COPY . /app
-RUN mvn package
-CMD ["java", "-jar", "target/app.jar"]
+
+# 1. Copy ONLY pom.xml first
+COPY app/pom.xml .
+
+# 2. Download dependencies (cached if pom.xml doesn't change)
+RUN mvn dependency:go-offline
+
+# 3. Copy source code (changes frequently)
+COPY app/src ./src
+
+# 4. Compile application
+RUN mvn clean package -DskipTests
+
+# 5. Clean up
+RUN rm -rf ./src pom.xml
+
+# Multi-stage for runtime
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=0 /app/target/app.jar .
+
+CMD ["java", "-jar", "app.jar"]

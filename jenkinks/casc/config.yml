@@ -1,0 +1,23 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Admin"
+          password: "whoIsThatGirl"
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "Overall/Administer:admin"
+        - "Overall/Read:authenticated"
+  numExecutors: 4
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+folders:
+  folders:
+    - name: "Whanos base images"
+    - name: "Projects"
